@@ -6,6 +6,7 @@ from pygame.locals import *
 
 # Initialize pygame
 pygame.init()
+pygame.mixer.init()
 
 # Global variables
 FPS = 32
@@ -47,12 +48,16 @@ def get_high_score():
             return 0
 
 def save_high_score(score):
-    global new_high_score_achieved
+    global new_high_score_achieved, new_high_score_counter
     high_score = get_high_score()
     if score > high_score:
         new_high_score_achieved = True
+        new_high_score_counter = 60  # Show message for 2 seconds (60 frames)
         with open(HIGH_SCORE_FILE, 'w') as f:
             f.write(str(score))
+        # Play celebration sound
+        if 'new_high_score' in GAME_SOUNDS:
+            GAME_SOUNDS['new_high_score'].play()
 
 def chooseDifficulty():
     global difficulty
@@ -122,7 +127,6 @@ def welcomeScreen():
 def mainGame():
     global new_high_score_achieved, new_high_score_counter
     new_high_score_achieved = False
-    new_high_score_counter = 30  # Frames to show message
 
     settings = DIFFICULTY_SETTINGS[difficulty]
     pipe_gap = settings['pipe_gap']
@@ -139,7 +143,7 @@ def mainGame():
     bird_flapped = False
 
     # Calculate proper pipe spacing based on difficulty
-    pipe_spacing = SCREENWIDTH * 0.8  # Adjusted for all difficulties
+    pipe_spacing = SCREENWIDTH * 0.8
     
     # Generate initial pipes
     newPipe1 = getRandomPipe(pipe_gap)
@@ -234,20 +238,27 @@ def mainGame():
 
 def getRandomPipe(pipe_gap):
     pipeHeight = GAME_SPRITES['pipe'][0].get_height()
-    min_y = int(pipe_gap / 2)  # Minimum y position for center of gap
-    max_y = int(SCREENHEIGHT - GAME_SPRITES['base'].get_height() - pipe_gap / 2)
+    base_height = GAME_SPRITES['base'].get_height()
     
+    # Calculate minimum and maximum y positions for the gap center
+    min_y = pipe_gap // 2 + 50  # Added buffer to prevent pipes from touching top/bottom
+    max_y = SCREENHEIGHT - base_height - pipe_gap // 2 - 50  # Added buffer
+    
+    # Ensure valid range
     if min_y > max_y:
         min_y = max_y
     
+    # Randomly select gap center
     center_y = random.randint(min_y, max_y)
-    y2 = center_y + pipe_gap / 2  # Lower pipe top position
-    y1 = center_y - pipe_gap / 2 - pipeHeight  # Upper pipe bottom position
+    
+    # Calculate pipe positions
+    upper_pipe_y = center_y - pipe_gap // 2 - pipeHeight
+    lower_pipe_y = center_y + pipe_gap // 2
     
     pipeX = SCREENWIDTH + 10
     pipe = [
-        {'x': pipeX, 'y': y1},  # Upper pipe
-        {'x': pipeX, 'y': y2}   # Lower pipe
+        {'x': pipeX, 'y': upper_pipe_y},  # Upper pipe
+        {'x': pipeX, 'y': lower_pipe_y}   # Lower pipe
     ]
     return pipe
 
@@ -268,6 +279,7 @@ if __name__ == "__main__":
     GAME_SOUNDS['point'] = pygame.mixer.Sound('gallery/audio/point.wav')
     GAME_SOUNDS['swoosh'] = pygame.mixer.Sound('gallery/audio/swoosh.wav')
     GAME_SOUNDS['wing'] = pygame.mixer.Sound('gallery/audio/wing.wav')
+    GAME_SOUNDS['new_high_score'] = pygame.mixer.Sound('gallery/audio/celebration.wav')
 
     chooseDifficulty()
     while True:
