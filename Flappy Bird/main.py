@@ -8,7 +8,7 @@ from pygame.locals import *
 pygame.init()
 
 # Initialize pygame mixer (for sounds)
-# pygame.mixer.init()
+pygame.mixer.init()
 
 # Global variables
 FPS = 32
@@ -51,11 +51,7 @@ def save_high_score(score):
         new_high_score_achieved = True
         with open(HIGH_SCORE_FILE, 'w') as f:
             f.write(str(score))
-        
-        # Play sound when a new high score is achieved
         GAME_SOUNDS['new_high_score'].play()
-
-# Game functions
 
 def welcomeScreen():
     playerx = int(SCREENWIDTH / 5)
@@ -105,7 +101,7 @@ def mainGame():
 
     high_score = get_high_score()
     high_score_flash_counter = 0
-    new_high_score_shown = False  # <--- Add this
+    new_high_score_shown = False
 
     newPipe1 = getRandomPipe()
     newPipe2 = getRandomPipe()
@@ -177,7 +173,7 @@ def mainGame():
 
                 if score > high_score and not new_high_score_shown:
                     high_score_flash_counter = FPS * 2  # 2 seconds
-                    new_high_score_shown = True  # ✅ show message only once
+                    new_high_score_shown = True
 
         # Draw all elements
         SCREEN.blit(GAME_SPRITES['background'], (0, 0))
@@ -207,12 +203,18 @@ def mainGame():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
-
-# Function to get random pipes
 def getRandomPipe():
     pipeHeight = GAME_SPRITES['pipe'][0].get_height()
     offset = SCREENHEIGHT / 3
-    y2 = offset + random.randrange(0, int(SCREENHEIGHT - GAME_SPRITES['base'].get_height() - 1.2 * offset))
+    
+    # BUG: 20% chance of pipes overlapping or having very small gap
+    if random.random() < 0.2:  # 20% chance of bug occurring
+        # Reduced range increases overlap chance
+        y2 = offset + random.randrange(-int(offset/2), int(offset/2))
+    else:
+        # Normal pipe generation
+        y2 = offset + random.randrange(0, int(SCREENHEIGHT - GAME_SPRITES['base'].get_height() - 1.2 * offset))
+    
     pipeX = SCREENWIDTH + 10
     y1 = pipeHeight - y2 + offset
     pipe = [
@@ -238,9 +240,7 @@ if __name__ == "__main__":
     GAME_SOUNDS['point'] = pygame.mixer.Sound('gallery/audio/point.wav')
     GAME_SOUNDS['swoosh'] = pygame.mixer.Sound('gallery/audio/swoosh.wav')
     GAME_SOUNDS['wing'] = pygame.mixer.Sound('gallery/audio/wing.wav')
-
-    # Add new high score celebration sound
-    GAME_SOUNDS['new_high_score'] = pygame.mixer.Sound('gallery/audio/celebration.wav')  # Use your sound file
+    GAME_SOUNDS['new_high_score'] = pygame.mixer.Sound('gallery/audio/celebration.wav')
 
     while True:
         welcomeScreen()
